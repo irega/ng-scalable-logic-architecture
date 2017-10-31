@@ -1,0 +1,1 @@
+# Angular scalable logic architecture
