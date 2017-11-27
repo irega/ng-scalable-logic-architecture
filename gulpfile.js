@@ -145,9 +145,191 @@ function getManufacturersPathsJson() {
     return require(jsonPath);
 }
 
-function createDynamicTasks() {
+gulp.task('build-dev', function () {
+    const manufacturer = getManufacturerFromArgs();
+    validateManufacturer('build-dev', manufacturer);
+
+    runSequence('build-dev-' + manufacturer, function () {
+        startDevServer();
+    });
+});
+
+function startDevServer() {
+    // TODO
 }
 
-createDynamicTasks();
+gulp.task('clean-dist', function () {
+    const ALL_FILES_FILTER = '/**',
+        NOT_OPERATOR_FILTER = '!';
+
+    return del([process.env.npm_package_config_distPath + ALL_FILES_FILTER,
+    NOT_OPERATOR_FILTER + process.env.npm_package_config_distPath]);
+});
+
+gulp.task('clean-aot', function () {
+    return del([process.env.npm_package_config_aotPath]);
+});
+
+gulp.task('aot', function (callback) {
+    return require('gulp-ngc')(process.env.npm_package_config_tsConfigAotPath);
+});
+
+gulp.task('build-prod', ['clean-dist'], function (callback) {
+    var tasksToExecute = [],
+        allManufacturers = getAllManufacturers();
+
+    allManufacturers.forEach(function (manufacurer) {
+        tasksToExecute.push('build-prod-' + manufacurer);
+        tasksToExecute.push('clean-aot');
+        tasksToExecute.push('aot');
+        tasksToExecute.push('webpack-prod-' + manufacurer);
+    });
+    tasksToExecute.push(callback);
+
+    return runSequence.apply(this, tasksToExecute);
+});
+
+function transformProductionTsConfig(manufacturer, data) {
+    return new Promise(function (resolve, reject) {
+        generateJsonWithAliasesAndPaths(manufacturer, transformProductionJsonWithAliasesAndPaths.bind(this, manufacturer))
+            .on('end', function () {
+                var paths = getManufacturersPathsJson();
+
+                data.compilerOptions.sourceMap = false;
+                data.compilerOptions.suppressImplicitAnyIndexErrors = true;
+                data.angularCompilerOptions = {
+                    "genDir": process.env.npm_package_config_aotPath,
+                    "entryModule": process.env.npm_package_config_clientAppPath + '/app.module#AppModule',
+                    "skipMetadataEmit": true
+                };
+                delete data.compilerOptions.typeRoots;
+                delete data.awesomeTypescriptLoaderOptions;
+
+                gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files ignored in the build: ');
+                gutil.log(paths.exclude);
+                delete data.exclude;
+                data.exclude = paths.exclude;
+                delete paths.exclude;
+
+                gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files included in the build: ');
+                gutil.log(paths);
+                data.compilerOptions.paths = paths;
+
+                del([process.env.npm_package_config_tmpFolderPath]).then(function () {
+                    resolve(data);
+                });
+            });
+    });
+}
+
+function transformProductionJsonWithAliasesAndPaths(manufacturer, data) {
+    var jsonTransformed = {},
+        actualAlias = '',
+        actualBaseFilePath = '',
+        previousAlias = '',
+        previousBaseFilePath = '',
+        manufacturersPreviousAliasCount = 0;
+
+    const manufacturersCount = getAllManufacturers().length,
+        manufacturerUpper = manufacturer.toString().toUpperCase();
+
+    jsonTransformed.exclude = [];
+
+    for (var i = 0; i < data.length; i++) {
+        var path = data[i];
+
+        actualAlias = getAliasFromManufacturerTsFile(path);
+        actualBaseFilePath = getBaseFileFromManufacturerTsFile(path);
+
+        if (!jsonTransformed[aliasActual]) {
+            jsonTransformed[aliasActual] = [actualBaseFilePath];
+        }
+        var isManufacturerFilePath = path.indexOf('.' + manufacturerUpper + TYPESCRIPT_EXTENSION) > -1;
+        if (isManufacturerFilePath) {
+            jsonTransformed[actualAlias] = [path];
+        }
+        else {
+            jsonTransformed.exclude.push(path);
+        }
+
+        var isFirstIteration = (i === 0);
+        if (isFirstIteration) {
+            previousAlias = actualAlias;
+            previousBaseFilePath = actualBaseFilePath;
+            manufacturersPreviousAliasCount = 1;
+        } else {
+            if (actualAlias !== previousAlias) {
+                excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufacturerUpper, jsonTransformed,
+                    previousAlias, manufacturersPreviousAliasCount, previousBaseFilePath);
+
+                previousAlias = aliasActual;
+                pathArchivoBaseAnterior = actualBaseFilePath;
+                manufacturersPreviousAliasCount = 1;
+            }
+            else {
+                manufacturersPreviousAliasCount++;
+            }
+        }
+    }
+
+    if (data.length > 0) {
+        excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufacturerUpper, jsonTransformed,
+            previousAlias, manufacturersPreviousAliasCount, previousBaseFilePath);
+    }
+    return jsonTransformed;
+}
+
+function excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufacturerUpper,
+    jsonTransformed, previousAlias, manufacturersPreviousAliasCount, previousBaseFilePath) {
+
+    var existsFilePathForAllManufacturers = (manufacturersPreviousAliasCount === manufacturersCount),
+        existsManufacturerFilePath = jsonTransformed[previousAlias][0].indexOf('.' + manufacturerUpper + TYPESCRIPT_EXTENSION) > -1;
+
+    if (!existsFilePathForAllManufacturers && existsManufacturerFilePath) {
+        jsonTransformed.exclude.push(previousBaseFilePath);
+    }
+}
+
+function webpackProduction(manufacturer, callback) {
+    var baseConfig = getWebpackBaseConfig();
+    webpack(transformProductionWebpackConfig(Object.create(baseConfig), manufacturer), function (err, stats) {
+        if (err) throw new gutil.PluginError('webpack-prod', err);
+        gutil.log('[webpack-prod]', stats.toString({
+            colors: true
+        }));
+        callback();
+    });
+}
+
+function getWebpackBaseConfig() {
+    const baseConfigPath = path.join(ROOT, process.env.npm_package_config_webpackBaseConfigPath);
+    delete require.cache[require.resolve(baseConfigPath)]
+    return require(baseConfigPath);
+}
+
+function transformProductionWebpackConfig(config, manufacturer) {
+    config.output.filename = 'dist/' + manufacturer + '/[name].[hash].bundle.js';
+    config.output.chunkFilename = 'dist/' + manufacturer + '/[id].[hash].chunk.js';
+    return config;
+}
+
+function createManufacturersDynamicTasks() {
+    var allManufacturers = getAllManufacturers();
+    allManufacturers.forEach(function (manufacturer) {
+        gulp.task('build-dev-' + manufacturer,
+            generateTsConfigForManufacturer('build-dev-' + manufacturer, manufacturer,
+                process.env.npm_package_config_tsConfigPath,
+                transformDevelopmentTsConfig.bind(this, manufacturer)));
+
+        gulp.task('build-prod-' + manufacturer,
+            generateTsConfigForManufacturer('build-prod-' + manufacturer, manufacturer,
+                process.env.npm_package_config_tsConfigAotPath,
+                transformProductionTsConfig.bind(this, manufacturer)));
+
+        gulp.task('webpack-prod-' + manufacturer, webpackProduction.bind(this, manufacturer));
+    });
+}
+
+createManufacturersDynamicTasks();
 
 gulp.task('default', ['build-prod']);

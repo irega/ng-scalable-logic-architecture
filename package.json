@@ -87,6 +87,9 @@
     "tsConfigAotPath": "./tsconfig-aot.json",
     "clientAppPath": "./src/client/app",
     "tmpFolderPath": "./dist/tmp",
-    "aliasPathSeparator": "_"
+    "aliasPathSeparator": "_",
+    "distPath": "./dist",
+    "aotPath": "./aot",
+    "webpackBaseConfigPath": "./config/webpack.base.js"
   }
 }
