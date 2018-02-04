@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Http } from '@angular/http';
-
-class CarData {
-}
+import { CarModel } from 'models_car.model';
+import { Observable } from 'rxjs/Observable';
 
 @Injectable()
 export class CarsService {
@@ -11,9 +10,12 @@ export class CarsService {
     }
 
     getCars() {
-        const URL_GET_CARS = '/Cars';
-        return this.http.get(URL_GET_CARS).map(response => {
-            const cars = response.json() as CarData[];
-        });
+        //we return a fake model (no http call). 
+        let model: Array<CarModel> = [
+            { id: 1, name: 'auris', transmission: 'auto' },
+            { id: 2, name: 'yaris', transmission: 'manual' },
+            { id: 3, name: 'avensis', transmission: 'auto' }
+        ];
+        return Observable.of(model);
     }
 }

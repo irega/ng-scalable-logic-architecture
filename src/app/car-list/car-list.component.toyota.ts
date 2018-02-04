@@ -2,6 +2,6 @@ import { Component } from '@angular/core';
 
 @Component({
     moduleId: module.id.toString(),
-    templateUrl: 'page-not-found.component.html'
+    templateUrl: 'car-list.component.toyota.html'
 })
-export class PageNotFoundComponent { }
+export class CarListComponent { }

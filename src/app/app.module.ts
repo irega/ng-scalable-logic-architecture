@@ -10,7 +10,6 @@ import { CarsService } from 'services_cars.service';
     imports: [
         BrowserModule,
         HttpModule,
-
         AppRoutingModule
     ],
     declarations: [
