@@ -4,12 +4,12 @@ const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-const ROOT = path.resolve(__dirname, '.');
+const ROOT = path.resolve(__dirname, '..');
 
 module.exports = {
     entry: {
-        'polyfills': './src/client/polyfills.ts',
-        'vendor': './src/client/vendor.ts'
+        'polyfills': './src/polyfills.ts',
+        'vendor': './src/vendor.ts'
     },
 
     output: {
@@ -55,9 +55,9 @@ module.exports = {
     },
     plugins: [
         new webpack.optimize.CommonsChunkPlugin({ name: ['vendor', 'polyfills'] }),
-
+        
         new CopyWebpackPlugin([
-            { from: './src/client/images/*.*', to: 'assets/', flatten: true }
+            { from: './src/images/*.*', to: 'assets/', flatten: true }
         ])
     ]
 };

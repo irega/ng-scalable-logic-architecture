@@ -106,7 +106,9 @@ function transformDevelopmentJsonWithAliasesAndPaths(manufacturer, data) {
         if (!jsonTransformed[alias]) {
             jsonTransformed[alias] = [getBaseFileFromManufacturerTsFile(path)];
         }
-        var isManufacturerFilePath = path.indexOf('.' + manufacturer.toString().toUpperCase() + TYPESCRIPT_EXTENSION) > -1;
+
+        var pathUpperCase = path.toString().toUpperCase();
+        var isManufacturerFilePath = pathUpperCase.indexOf('.' + manufacturer.toString().toUpperCase() + TYPESCRIPT_EXTENSION.toUpperCase()) > -1;
         if (isManufacturerFilePath) {
             jsonTransformed[alias] = [path];
         }
@@ -205,9 +207,11 @@ function transformProductionTsConfig(manufacturer, data) {
                 delete data.compilerOptions.typeRoots;
                 delete data.awesomeTypescriptLoaderOptions;
 
+                paths.exclude.push('src/client/main.ts');
                 gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files ignored in the build: ');
                 gutil.log(paths.exclude);
                 delete data.exclude;
+                paths.exclude.push('node_modules');
                 data.exclude = paths.exclude;
                 delete paths.exclude;
 
@@ -241,10 +245,12 @@ function transformProductionJsonWithAliasesAndPaths(manufacturer, data) {
         actualAlias = getAliasFromManufacturerTsFile(path);
         actualBaseFilePath = getBaseFileFromManufacturerTsFile(path);
 
-        if (!jsonTransformed[aliasActual]) {
-            jsonTransformed[aliasActual] = [actualBaseFilePath];
+        if (!jsonTransformed[actualAlias]) {
+            jsonTransformed[actualAlias] = [actualBaseFilePath];
         }
-        var isManufacturerFilePath = path.indexOf('.' + manufacturerUpper + TYPESCRIPT_EXTENSION) > -1;
+
+        var pathUpperCase = path.toString().toUpperCase();
+        var isManufacturerFilePath = pathUpperCase.indexOf('.' + manufacturerUpper + TYPESCRIPT_EXTENSION.toUpperCase()) > -1;
         if (isManufacturerFilePath) {
             jsonTransformed[actualAlias] = [path];
         }
@@ -262,8 +268,8 @@ function transformProductionJsonWithAliasesAndPaths(manufacturer, data) {
                 excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufacturerUpper, jsonTransformed,
                     previousAlias, manufacturersPreviousAliasCount, previousBaseFilePath);
 
-                previousAlias = aliasActual;
-                pathArchivoBaseAnterior = actualBaseFilePath;
+                previousAlias = actualAlias;
+                previousBaseFilePath = actualBaseFilePath;
                 manufacturersPreviousAliasCount = 1;
             }
             else {
@@ -283,7 +289,8 @@ function excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufac
     jsonTransformed, previousAlias, manufacturersPreviousAliasCount, previousBaseFilePath) {
 
     var existsFilePathForAllManufacturers = (manufacturersPreviousAliasCount === manufacturersCount),
-        existsManufacturerFilePath = jsonTransformed[previousAlias][0].indexOf('.' + manufacturerUpper + TYPESCRIPT_EXTENSION) > -1;
+        jsonPreviousAliasUpperCase = jsonTransformed[previousAlias][0].toUpperCase(),
+        existsManufacturerFilePath = jsonPreviousAliasUpperCase.indexOf('.' + manufacturerUpper + TYPESCRIPT_EXTENSION.toUpperCase()) > -1;
 
     if (!existsFilePathForAllManufacturers && existsManufacturerFilePath) {
         jsonTransformed.exclude.push(previousBaseFilePath);
@@ -308,8 +315,8 @@ function getWebpackBaseConfig() {
 }
 
 function transformProductionWebpackConfig(config, manufacturer) {
-    config.output.filename = 'dist/' + manufacturer + '/[name].[hash].bundle.js';
-    config.output.chunkFilename = 'dist/' + manufacturer + '/[id].[hash].chunk.js';
+    config.output.filename = manufacturer + '/[name].[hash].bundle.js';
+    config.output.chunkFilename = manufacturer + '/[id].[hash].chunk.js';
     return config;
 }
 

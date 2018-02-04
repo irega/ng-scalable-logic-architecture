@@ -4,7 +4,7 @@ import { HttpModule } from '@angular/http';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule, routedComponents } from './app-routing.module';
-import { CarsService } from 'services_cars.service';
+import { CarsService } from 'src_app_services_cars.service';
 
 @NgModule({
     imports: [

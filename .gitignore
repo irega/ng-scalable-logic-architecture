@@ -2,4 +2,7 @@ node_modules/
 npm-debug.log
 package-lock.json
 tsconfig.json
+tsconfig-aot.json
 dist/
+aot/
+src/**/*.js
