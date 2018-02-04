@@ -77,6 +77,8 @@
   "config": {
     "manufacturers": "toyota;renault;honda",
     "manufacturerArg": "manufacturer",
+    "mainPath": "./src/main.ts",
+    "mainAotPath": "./src/main-aot.ts",
     "tsConfigBasePath": "./tsconfig-base.json",
     "tsConfigPath": "./tsconfig.json",
     "tsConfigAotPath": "./tsconfig-aot.json",

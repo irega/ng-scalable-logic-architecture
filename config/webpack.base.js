@@ -1,9 +1,6 @@
 const path = require('path');
 const webpack = require('webpack');
-
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-
 const ROOT = path.resolve(__dirname, '..');
 
 module.exports = {
@@ -55,7 +52,7 @@ module.exports = {
     },
     plugins: [
         new webpack.optimize.CommonsChunkPlugin({ name: ['vendor', 'polyfills'] }),
-        
+
         new CopyWebpackPlugin([
             { from: './src/images/*.*', to: 'assets/', flatten: true }
         ])

@@ -68,10 +68,18 @@ function validateManufacturer(taskName, manufacturer) {
 
 function transformDevelopmentTsConfig(manufacturer, data) {
     return new Promise(function (resolve, reject) {
-        generateJsonWithAliasesAndPaths(manufacturer, transformDevelopmentJsonWithAliasesAndPaths.bind(this, manufacturer))
+        generateJsonWithAliasesAndPaths(manufacturer, transformJsonWithAliasesAndPaths.bind(this, manufacturer))
             .on('end', function () {
                 var paths = getManufacturersPathsJson();
+
+                data.exclude = ['node_modules',
+                    process.env.npm_package_config_mainAotPath.replace('./', ''),
+                    process.env.npm_package_config_aotPath.replace('./', '')
+                ].concat(paths.exclude);
+                delete paths.exclude;
+
                 data.compilerOptions.paths = paths;
+
                 del([process.env.npm_package_config_tmpFolderPath]).then(function () {
                     resolve(data);
                 });
@@ -99,134 +107,7 @@ function generateJsonWithAliasesAndPaths(manufacturer, transformJson) {
         .pipe(gulp.dest(process.env.npm_package_config_tmpFolderPath));
 }
 
-function transformDevelopmentJsonWithAliasesAndPaths(manufacturer, data) {
-    var jsonTransformed = {};
-    data.forEach(function (path) {
-        var alias = getAliasFromManufacturerTsFile(path);
-        if (!jsonTransformed[alias]) {
-            jsonTransformed[alias] = [getBaseFileFromManufacturerTsFile(path)];
-        }
-
-        var pathUpperCase = path.toString().toUpperCase();
-        var isManufacturerFilePath = pathUpperCase.indexOf('.' + manufacturer.toString().toUpperCase() + TYPESCRIPT_EXTENSION.toUpperCase()) > -1;
-        if (isManufacturerFilePath) {
-            jsonTransformed[alias] = [path];
-        }
-    });
-    return jsonTransformed;
-}
-
-function getAliasFromManufacturerTsFile(manufacturerFilePath) {
-    const actualFolderPrefix = './';
-    var clientAppPath = process.env.npm_package_config_clientAppPath;
-    if (clientAppPath.startsWith(actualFolderPrefix)) {
-        clientAppPath = clientAppPath.substring(actualFolderPrefix.length - 1);
-    }
-    var alias = manufacturerFilePath.replace(clientAppPath, '')
-        .replace(/\//g, process.env.npm_package_config_aliasPathSeparator);
-
-    return removeManufacturerFromPath(alias);
-}
-
-function removeManufacturerFromPath(fileName) {
-    var lastDotIndex = fileName.lastIndexOf('.'),
-        fileNameWithoutLastDot = fileName.substring(0, lastDotIndex),
-        penultimateDotIndex = fileNameWithoutLastDot.lastIndexOf('.');
-
-    return fileName.substring(0, penultimateDotIndex);
-}
-
-function getBaseFileFromManufacturerTsFile(manufacturerFilePath) {
-    return removeManufacturerFromPath(manufacturerFilePath) + TYPESCRIPT_EXTENSION;
-}
-
-function getManufacturersPathsJson() {
-    const jsonPath = process.env.npm_package_config_tmpFolderPath + '/' +
-        JSON_MANUFACTURERS_PATHS_FILE_NAME;
-    delete require.cache[require.resolve(jsonPath)]
-    return require(jsonPath);
-}
-
-gulp.task('build-dev', function () {
-    const manufacturer = getManufacturerFromArgs();
-    validateManufacturer('build-dev', manufacturer);
-
-    runSequence('build-dev-' + manufacturer, function () {
-        startDevServer();
-    });
-});
-
-function startDevServer() {
-    // TODO
-}
-
-gulp.task('clean-dist', function () {
-    const ALL_FILES_FILTER = '/**',
-        NOT_OPERATOR_FILTER = '!';
-
-    return del([process.env.npm_package_config_distPath + ALL_FILES_FILTER,
-    NOT_OPERATOR_FILTER + process.env.npm_package_config_distPath]);
-});
-
-gulp.task('clean-aot', function () {
-    return del([process.env.npm_package_config_aotPath]);
-});
-
-gulp.task('aot', function (callback) {
-    return require('gulp-ngc')(process.env.npm_package_config_tsConfigAotPath);
-});
-
-gulp.task('build-prod', ['clean-dist'], function (callback) {
-    var tasksToExecute = [],
-        allManufacturers = getAllManufacturers();
-
-    allManufacturers.forEach(function (manufacurer) {
-        tasksToExecute.push('build-prod-' + manufacurer);
-        tasksToExecute.push('clean-aot');
-        tasksToExecute.push('aot');
-        tasksToExecute.push('webpack-prod-' + manufacurer);
-    });
-    tasksToExecute.push(callback);
-
-    return runSequence.apply(this, tasksToExecute);
-});
-
-function transformProductionTsConfig(manufacturer, data) {
-    return new Promise(function (resolve, reject) {
-        generateJsonWithAliasesAndPaths(manufacturer, transformProductionJsonWithAliasesAndPaths.bind(this, manufacturer))
-            .on('end', function () {
-                var paths = getManufacturersPathsJson();
-
-                data.compilerOptions.sourceMap = false;
-                data.compilerOptions.suppressImplicitAnyIndexErrors = true;
-                data.angularCompilerOptions = {
-                    "genDir": process.env.npm_package_config_aotPath,
-                    "entryModule": process.env.npm_package_config_clientAppPath + '/app.module#AppModule',
-                    "skipMetadataEmit": true
-                };
-                delete data.compilerOptions.typeRoots;
-                delete data.awesomeTypescriptLoaderOptions;
-
-                paths.exclude.push('src/client/main.ts');
-                gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files ignored in the build: ');
-                gutil.log(paths.exclude);
-                delete data.exclude;
-                paths.exclude.push('node_modules');
-                data.exclude = paths.exclude;
-                delete paths.exclude;
-
-                gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files included in the build: ');
-                gutil.log(paths);
-                data.compilerOptions.paths = paths;
-
-                del([process.env.npm_package_config_tmpFolderPath]).then(function () {
-                    resolve(data);
-                });
-            });
-    });
-}
-
-function transformProductionJsonWithAliasesAndPaths(manufacturer, data) {
+function transformJsonWithAliasesAndPaths(manufacturer, data) {
     var jsonTransformed = {},
         actualAlias = '',
         actualBaseFilePath = '',
@@ -285,6 +166,30 @@ function transformProductionJsonWithAliasesAndPaths(manufacturer, data) {
     return jsonTransformed;
 }
 
+function getAliasFromManufacturerTsFile(manufacturerFilePath) {
+    const actualFolderPrefix = './';
+    var clientAppPath = process.env.npm_package_config_clientAppPath;
+    if (clientAppPath.startsWith(actualFolderPrefix)) {
+        clientAppPath = clientAppPath.substring(actualFolderPrefix.length - 1);
+    }
+    var alias = manufacturerFilePath.replace(clientAppPath, '')
+        .replace(/\//g, process.env.npm_package_config_aliasPathSeparator);
+
+    return removeManufacturerFromPath(alias);
+}
+
+function removeManufacturerFromPath(fileName) {
+    var lastDotIndex = fileName.lastIndexOf('.'),
+        fileNameWithoutLastDot = fileName.substring(0, lastDotIndex),
+        penultimateDotIndex = fileNameWithoutLastDot.lastIndexOf('.');
+
+    return fileName.substring(0, penultimateDotIndex);
+}
+
+function getBaseFileFromManufacturerTsFile(manufacturerFilePath) {
+    return removeManufacturerFromPath(manufacturerFilePath) + TYPESCRIPT_EXTENSION;
+}
+
 function excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufacturerUpper,
     jsonTransformed, previousAlias, manufacturersPreviousAliasCount, previousBaseFilePath) {
 
@@ -295,6 +200,133 @@ function excludeBaseFileIfExistsManufacturerFilePath(manufacturersCount, manufac
     if (!existsFilePathForAllManufacturers && existsManufacturerFilePath) {
         jsonTransformed.exclude.push(previousBaseFilePath);
     }
+}
+
+function getManufacturersPathsJson() {
+    const jsonPath = process.env.npm_package_config_tmpFolderPath + '/' +
+        JSON_MANUFACTURERS_PATHS_FILE_NAME;
+    delete require.cache[require.resolve(jsonPath)]
+    return require(jsonPath);
+}
+
+gulp.task('build-dev', function () {
+    const manufacturer = getManufacturerFromArgs();
+    validateManufacturer('build-dev', manufacturer);
+
+    runSequence('build-dev-' + manufacturer, function () {
+        startDevServer(manufacturer);
+    });
+});
+
+function startDevServer(manufacturer) {
+    var baseConfig = getWebpackBaseConfig();
+    var config = transformDevelopmentWebpackConfig(Object.create(baseConfig), manufacturer);
+
+    const WebpackDevServer = require('webpack-dev-server');
+    new WebpackDevServer(webpack(config), {
+        stats: {
+            colors: true
+        }
+    }).listen(8080, 'localhost', function (err) {
+        if (err) throw new gutil.PluginError('webpack-dev-server', err);
+        gutil.log('[webpack-dev-server]', 'Webpack DevServer listen at http://localhost:8080');
+    });
+}
+
+function transformDevelopmentWebpackConfig(config, manufacturer) {
+    const TsConfigPathsPlugin = require('awesome-typescript-loader').TsConfigPathsPlugin;
+
+    config.devtool = 'source-map';
+    config.performance = {
+        hints: false
+    };
+    config.entry.app = process.env.npm_package_config_mainPath;
+    config.output.filename = manufacturer + '/[name].[hash].bundle.js';
+    config.output.chunkFilename = manufacturer + '/[id].[hash].chunk.js';
+
+    config.resolve.plugins = [
+        new TsConfigPathsPlugin({
+            tsconfig: process.env.npm_package_config_tsConfigPath,
+            compiler: 'typescript'
+        })
+    ];
+    config.module.rules.push({
+        test: /\.ts$/,
+        use: [
+            'awesome-typescript-loader',
+            'angular-router-loader',
+            'angular2-template-loader',
+            'source-map-loader',
+            'tslint-loader'
+        ]
+    });
+    return config;
+}
+
+gulp.task('clean-dist', function () {
+    const ALL_FILES_FILTER = '/**',
+        NOT_OPERATOR_FILTER = '!';
+
+    return del([process.env.npm_package_config_distPath + ALL_FILES_FILTER,
+    NOT_OPERATOR_FILTER + process.env.npm_package_config_distPath]);
+});
+
+gulp.task('clean-aot', function () {
+    return del([process.env.npm_package_config_aotPath]);
+});
+
+gulp.task('aot', function (callback) {
+    return require('gulp-ngc')(process.env.npm_package_config_tsConfigAotPath);
+});
+
+gulp.task('build-prod', ['clean-dist'], function (callback) {
+    var tasksToExecute = [],
+        allManufacturers = getAllManufacturers();
+
+    allManufacturers.forEach(function (manufacurer) {
+        tasksToExecute.push('build-prod-' + manufacurer);
+        tasksToExecute.push('clean-aot');
+        tasksToExecute.push('aot');
+        tasksToExecute.push('webpack-prod-' + manufacurer);
+    });
+    tasksToExecute.push(callback);
+
+    return runSequence.apply(this, tasksToExecute);
+});
+
+function transformProductionTsConfig(manufacturer, data) {
+    return new Promise(function (resolve, reject) {
+        generateJsonWithAliasesAndPaths(manufacturer, transformJsonWithAliasesAndPaths.bind(this, manufacturer))
+            .on('end', function () {
+                var paths = getManufacturersPathsJson();
+
+                data.compilerOptions.sourceMap = false;
+                data.compilerOptions.suppressImplicitAnyIndexErrors = true;
+                data.angularCompilerOptions = {
+                    "genDir": process.env.npm_package_config_aotPath,
+                    "entryModule": process.env.npm_package_config_clientAppPath + '/app.module#AppModule',
+                    "skipMetadataEmit": true
+                };
+                delete data.compilerOptions.typeRoots;
+                delete data.awesomeTypescriptLoaderOptions;
+
+                paths.exclude.push(process.env.npm_package_config_mainPath.replace('./', ''));
+                gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files ignored in the build: ');
+                gutil.log(paths.exclude);
+                delete data.exclude;
+                paths.exclude.push('node_modules');
+                data.exclude = paths.exclude;
+                delete paths.exclude;
+
+                gutil.log('[Manufacturer ' + manufacturer + ']: *.ts files included in the build: ');
+                gutil.log(paths);
+                data.compilerOptions.paths = paths;
+
+                del([process.env.npm_package_config_tmpFolderPath]).then(function () {
+                    resolve(data);
+                });
+            });
+    });
 }
 
 function webpackProduction(manufacturer, callback) {
