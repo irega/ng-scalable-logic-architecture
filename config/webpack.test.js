@@ -31,16 +31,6 @@ module.exports = {
             },
             {
                 test: /\.scss$/,
-                include: path.join(__dirname, 'src/client/styles'),
-                use: [
-                    'style-loader',
-                    'css-loader',
-                    'sass-loader'
-                ]
-            },
-            {
-                test: /\.scss$/,
-                exclude: path.join(__dirname, 'src/client/styles'),
                 use: [
                     'raw-loader',
                     'sass-loader'

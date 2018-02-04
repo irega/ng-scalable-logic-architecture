@@ -1,7 +1,7 @@
 // Karma configuration for Angular testing
 
 module.exports = function (config) {
-    var webpackConfig = require('./config//webpack.test.js');
+    var webpackConfig = require('./config/webpack.test.js');
 
     var configuration = {
 
