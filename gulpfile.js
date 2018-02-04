@@ -317,12 +317,12 @@ function createManufacturersDynamicTasks() {
     var allManufacturers = getAllManufacturers();
     allManufacturers.forEach(function (manufacturer) {
         gulp.task('build-dev-' + manufacturer,
-            generateTsConfigForManufacturer('build-dev-' + manufacturer, manufacturer,
+            generateTsConfigForManufacturer.bind(this, 'build-dev-' + manufacturer, manufacturer,
                 process.env.npm_package_config_tsConfigPath,
                 transformDevelopmentTsConfig.bind(this, manufacturer)));
 
         gulp.task('build-prod-' + manufacturer,
-            generateTsConfigForManufacturer('build-prod-' + manufacturer, manufacturer,
+            generateTsConfigForManufacturer.bind(this, 'build-prod-' + manufacturer, manufacturer,
                 process.env.npm_package_config_tsConfigAotPath,
                 transformProductionTsConfig.bind(this, manufacturer)));
 

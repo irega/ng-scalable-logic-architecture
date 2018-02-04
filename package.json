@@ -78,7 +78,7 @@
     "tsConfigBasePath": "./tsconfig-base.json",
     "tsConfigPath": "./tsconfig.json",
     "tsConfigAotPath": "./tsconfig-aot.json",
-    "clientAppPath": "./src/client/app",
+    "clientAppPath": "./src/app",
     "tmpFolderPath": "./dist/tmp",
     "aliasPathSeparator": "_",
     "distPath": "./dist",
