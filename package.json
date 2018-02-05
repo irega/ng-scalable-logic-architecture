@@ -40,6 +40,7 @@
     "@types/jasmine": "2.5.53",
     "webpack": "3.5.4",
     "webpack-dev-server": "2.9.3",
+    "webpack-hot-middleware": "2.21.0",
     "awesome-typescript-loader": "3.2.2",
     "clean-webpack-plugin": "0.1.16",
     "copy-webpack-plugin": "4.0.1",
@@ -87,6 +88,7 @@
     "aliasPathSeparator": "_",
     "distPath": "./dist",
     "aotPath": "./aot",
-    "webpackBaseConfigPath": "./config/webpack.base.js"
+    "webpackBaseConfigPath": "./config/webpack.base.js",
+    "indexPath": "./src/index.html"
   }
 }

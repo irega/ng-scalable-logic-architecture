@@ -222,14 +222,26 @@ function startDevServer(manufacturer) {
     var baseConfig = getWebpackBaseConfig();
     var config = transformDevelopmentWebpackConfig(Object.create(baseConfig), manufacturer);
 
-    const WebpackDevServer = require('webpack-dev-server');
-    new WebpackDevServer(webpack(config), {
+    const express = require('express');
+    const webpackDevMiddleware = require('webpack-dev-middleware');
+    const webpackHotMiddleware = require('webpack-hot-middleware');
+    const app = express();
+    const compiler = webpack(config);
+
+    app.use(webpackDevMiddleware(compiler, {
         stats: {
             colors: true
-        }
-    }).listen(8080, 'localhost', function (err) {
-        if (err) throw new gutil.PluginError('webpack-dev-server', err);
-        gutil.log('[webpack-dev-server]', 'Webpack DevServer listen at http://localhost:8080');
+        },
+        publicPath: config.output.publicPath
+    }));
+    app.use(webpackHotMiddleware(compiler));
+
+    app.get("*", (req, res) => {
+        res.sendFile(path.join(ROOT, process.env.npm_package_config_distPath, "index.html"));
+    });
+
+    app.listen(3000, function () {
+        console.log('Example app listening on port 3000!\n');
     });
 }
 
@@ -240,7 +252,10 @@ function transformDevelopmentWebpackConfig(config, manufacturer) {
     config.performance = {
         hints: false
     };
+    config.entry['webpack/hot/dev-server'] = 'webpack/hot/dev-server';
+    config.entry['webpack-hot-middleware/client'] = 'webpack-hot-middleware/client';
     config.entry.app = process.env.npm_package_config_mainPath;
+
     config.output.filename = manufacturer + '/[name].[hash].bundle.js';
     config.output.chunkFilename = manufacturer + '/[id].[hash].chunk.js';
 
@@ -260,6 +275,15 @@ function transformDevelopmentWebpackConfig(config, manufacturer) {
             'tslint-loader'
         ]
     });
+
+    const HtmlWebpackPlugin = require('html-webpack-plugin');
+    config.plugins.push(new webpack.HotModuleReplacementPlugin());
+    config.plugins.push(
+        new HtmlWebpackPlugin({
+            inject: 'body',
+            template: process.env.npm_package_config_indexPath
+        }));
+
     return config;
 }
 
