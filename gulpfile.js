@@ -236,8 +236,9 @@ function startDevServer(manufacturer) {
     }));
     app.use(webpackHotMiddleware(compiler));
 
-    app.listen(3000, function () {
-        console.log('Example app listening on port 3000!\n');
+    const port = process.env.npm_package_config_devServerPort;
+    app.listen(port, function () {
+        console.log('Wepack DevServer listening on port ' + port + '!\n');
     });
 }
 

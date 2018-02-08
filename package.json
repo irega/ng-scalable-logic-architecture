@@ -89,6 +89,7 @@
     "distPath": "./dist",
     "aotPath": "./aot",
     "webpackBaseConfigPath": "./config/webpack.base.js",
-    "indexPath": "./src/index.html"
+    "indexPath": "./src/index.html",
+    "devServerPort": 3000
   }
 }
