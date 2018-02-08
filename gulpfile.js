@@ -236,10 +236,6 @@ function startDevServer(manufacturer) {
     }));
     app.use(webpackHotMiddleware(compiler));
 
-    app.get("*", (req, res) => {
-        res.sendFile(path.join(ROOT, process.env.npm_package_config_distPath, "index.html"));
-    });
-
     app.listen(3000, function () {
         console.log('Example app listening on port 3000!\n');
     });
@@ -371,8 +367,16 @@ function getWebpackBaseConfig() {
 }
 
 function transformProductionWebpackConfig(config, manufacturer) {
-    config.output.filename = manufacturer + '/[name].[hash].bundle.js';
-    config.output.chunkFilename = manufacturer + '/[id].[hash].chunk.js';
+    config.output.filename = '[name].[hash].bundle.js';
+    config.output.chunkFilename = '[id].[hash].chunk.js';
+    config.output.path = ROOT + process.env.npm_package_config_distPath.replace('.', '') + '/' + manufacturer;
+
+    const HtmlWebpackPlugin = require('html-webpack-plugin');
+    config.plugins.push(
+        new HtmlWebpackPlugin({
+            inject: 'body',
+            template: process.env.npm_package_config_indexPath
+        }));
     return config;
 }
 
