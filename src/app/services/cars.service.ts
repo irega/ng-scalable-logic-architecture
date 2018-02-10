@@ -10,8 +10,8 @@ export class CarsService {
     }
 
     getCars() {
-        //we return a fake model (no http call). 
-        let model: Array<CarModel> = [
+        // we return a fake model (no http call).
+        const model: Array<CarModel> = [
             { id: 1, name: 'auris', transmission: 'auto' },
             { id: 2, name: 'yaris', transmission: 'manual' },
             { id: 3, name: 'avensis', transmission: 'auto' }

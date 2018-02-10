@@ -1,1 +1,6 @@
-<h1>Car list</h1>
+<h1>Default car list</h1>
+<div>
+    <div *ngFor="let c of cars">
+        <carman-car-detail [car]="c"></carman-car-detail>
+    </div>
+</div>
