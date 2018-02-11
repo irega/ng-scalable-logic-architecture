@@ -57,7 +57,7 @@ module.exports = {
         app.use(webpackHotMiddleware(compiler));
         const port = process.env.npm_package_config_devServerPort;
         app.listen(port, function() {
-            console.log('Wepack DevServer listening on port ' + port + '!\n');
+            console.log('Webpack DevServer listening on port ' + port + '!\n');
         });
     }
 };
