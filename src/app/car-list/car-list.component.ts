@@ -6,7 +6,8 @@ import { CarModel } from 'src_app_models_car.model';
 @Component({
  moduleId: module.id.toString(),
  selector: 'carman-car-list',
- templateUrl: 'car-list.component.html'
+ templateUrl: 'car-list.component.html',
+ styleUrls: ['./car-list.component.scss']
 })
 export class CarListComponent implements OnInit, OnDestroy {
  public cars: CarModel[];
